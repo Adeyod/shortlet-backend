@@ -77,7 +77,7 @@ async function bootstrap() {
 
   const serverUrl =
     process.env.NODE_ENV === 'production'
-      ? 'https://qanda-backend-1bj1.onrender.com'
+      ? 'https://shortlet-backend.onrender.com'
       : `http://localhost:${port}`;
 
   // Enable Swagger Docs
