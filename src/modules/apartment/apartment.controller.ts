@@ -63,7 +63,30 @@ export class ApartmentController {
         name: { type: 'string' },
         description: { type: 'string' },
         pricePerNight: { type: 'number' },
+        location: {
+          type: 'object',
+          properties: {
+            address: { type: 'string' },
+            city: { type: 'string' },
+            state: { type: 'string' },
+            country: { type: 'string' },
+            latitude: { type: 'number', example: 6.5244 },
+            longitude: { type: 'number', example: 3.3792 },
+          },
+          required: ['address', 'city', 'state', 'country'],
+        },
         bathrooms: { type: 'number' },
+        // location: {
+        //   type: 'string',
+        //   example: JSON.stringify({
+        //     address: 'Lekki Phase 1, off Fola Osibo',
+        //     city: 'Lekki',
+        //     state: 'Lagos',
+        //     country: 'Nigeria',
+        //     latitude: 6.5244,
+        //     longitude: 3.3792,
+        //   }),
+        // },
         guests: { type: 'number' },
         bedrooms: { type: 'number' },
         totalUnits: { type: 'number' },
@@ -113,8 +136,6 @@ export class ApartmentController {
     @Body() createDto: CreateApartmentDto,
     @GetCurrentUser() user: JwtUser,
   ) {
-    console.log('createDto:', createDto);
-    console.log('files:', files);
     const response = await this.apartmentService.createApartment(
       user,
       createDto,

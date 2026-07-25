@@ -33,6 +33,26 @@ export class Apartment {
   @Prop({ type: [String], default: [] })
   amenities!: string[];
 
+  @Prop({
+    type: {
+      address: String,
+      city: String,
+      state: String,
+      country: String,
+      latitude: Number,
+      longitude: Number,
+    },
+    required: true,
+  })
+  location!: {
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude?: number;
+    longitude?: number;
+  };
+
   // Product images (Cloudinary / S3 URLs)
   @Prop({
     type: [

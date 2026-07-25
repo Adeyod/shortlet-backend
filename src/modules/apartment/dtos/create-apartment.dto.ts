@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { plainToInstance, Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -7,7 +7,9 @@ import {
   IsOptional,
   IsString,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { LocationDto } from './location.dto';
 
 export class CreateApartmentDto {
   @ApiProperty({
@@ -70,6 +72,29 @@ export class CreateApartmentDto {
   @Min(1)
   @Transform(({ value }) => Number(value))
   guests!: number;
+
+  @ApiProperty({
+    description: 'Location details of the apartment',
+    type: LocationDto,
+  })
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+
+    let parsed;
+
+    try {
+      parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    } catch (e) {
+      console.log('❌ Failed to parse location:', value);
+      return undefined;
+    }
+
+    // ✅ Convert manually to class instance
+    return plainToInstance(LocationDto, parsed);
+  })
+  @ValidateNested()
+  @Type(() => LocationDto)
+  location?: LocationDto;
 
   @ApiPropertyOptional({})
   @IsOptional()
