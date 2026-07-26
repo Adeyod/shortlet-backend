@@ -6,7 +6,7 @@ import { CreateBookingDto } from './dtos/create-booking.dto';
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  @Post()
+  @Post('create-booking')
   async createBooking(@Body() dto: CreateBookingDto, @Req() req: any) {
     return await this.bookingService.createBooking(dto, req.user.id);
   }
