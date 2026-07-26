@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
 import { Apartment, ApartmentDocument } from '../schemas/apartment.schema';
 
@@ -80,6 +80,21 @@ export class ApartmentRepository {
       _id: id,
       isDeleted: false,
     });
+
+    return response;
+  }
+  async findApartmentByIdWithSession(
+    apartmentId: string,
+    session: ClientSession,
+  ): Promise<ApartmentDocument | null> {
+    const id = new Types.ObjectId(apartmentId);
+
+    const response = await this.apartmentModel
+      .findOne({
+        _id: id,
+        isDeleted: false,
+      })
+      .session(session);
 
     return response;
   }

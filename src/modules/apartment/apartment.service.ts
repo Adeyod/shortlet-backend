@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ClientSession } from 'mongoose';
 import slugify from 'slugify';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudinary.service';
@@ -76,6 +77,22 @@ export class ApartmentService {
 
   async findApartmentById(id: string) {
     const apartment = await this.apartmentRepo.findApartmentById(id);
+
+    if (!apartment) {
+      throw new NotFoundException({
+        message: 'Apartment not found',
+        success: false,
+        status: 404,
+      });
+    }
+
+    return apartment;
+  }
+  async findApartmentByIdWithSession(id: string, session: ClientSession) {
+    const apartment = await this.apartmentRepo.findApartmentByIdWithSession(
+      id,
+      session,
+    );
 
     if (!apartment) {
       throw new NotFoundException({

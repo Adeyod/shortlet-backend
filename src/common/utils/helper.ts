@@ -23,23 +23,20 @@ export const generateRefCode = (): string => {
   return code;
 };
 
-export const generatePaymentReference = (
-  payload,
-  refType: 'PAYMENT' | 'WITHDRAWAL',
-) => {
-  const { userId, plan } = payload;
+export const generatePaymentReference = (payload, refType: 'PAYMENT') => {
+  const { bookingId } = payload;
 
   console.log('payload:', payload);
 
-  if (!userId || !plan) {
+  if (!bookingId) {
     throw new BadRequestException({
-      message: 'User ID and plan are required.',
+      message: 'Booking ID and plan are required.',
       success: false,
       status: 400,
     });
   }
 
-  const ref = `${refType}_${plan}_${userId}_${Date.now()}`;
+  const ref = `${refType}_${bookingId}_${Date.now()}`;
 
   return ref;
 };

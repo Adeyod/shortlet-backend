@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -165,7 +166,7 @@ export class ApartmentController {
     status: 500,
     description: 'Internal server error',
   })
-  async findAll(queryWithPaginationDto: QueryWithPaginationDto) {
+  async findAll(@Query() queryWithPaginationDto: QueryWithPaginationDto) {
     const response = await this.apartmentService.findAll(
       queryWithPaginationDto,
     );
@@ -206,7 +207,7 @@ export class ApartmentController {
   @SuccessMessage('Apartment updated successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Fetch apartment',
+    summary: 'Update apartment',
     description: 'This is the endpoint to update an apartment.',
   })
   @ApiResponse({
@@ -238,7 +239,8 @@ export class ApartmentController {
   @SuccessMessage('Apartment status changed successfully.')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Change apartment status',
+    summary:
+      'Change apartment status. This is used to change active apartment to in-active and vice versa.',
     description: 'This is the endpoint to change the status of an apartment.',
   })
   @ApiResponse({
