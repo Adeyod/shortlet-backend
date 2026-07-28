@@ -115,7 +115,7 @@ export class ApartmentRepository {
     const id = new Types.ObjectId(apartmentId);
 
     const response = await this.apartmentModel.findByIdAndUpdate(id, data, {
-      new: true,
+      returnDocument: 'after',
     });
     return response;
   }
