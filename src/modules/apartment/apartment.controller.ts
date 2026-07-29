@@ -32,6 +32,7 @@ import type { JwtUser } from '../../common/types/jwt-user.type';
 import { Role } from '../users/schemas/user.schema';
 import { ApartmentService } from './apartment.service';
 import { CreateApartmentDto } from './dtos/create-apartment.dto';
+import { UpdateApartmentMediaDto } from './dtos/update-apartment-media.dto';
 import { UpdateApartmentDto } from './dtos/update-apartment.dto';
 
 @Controller('apartments')
@@ -230,6 +231,55 @@ export class ApartmentController {
     const response = await this.apartmentService.updateApartment(id, updateDto);
 
     return response;
+  }
+
+  @Patch('update-apartment-media/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Apartment media updated successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Update apartment media',
+    description: 'This is the endpoint to update an apartment media.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Apartment media updated successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to update apartment media.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+
+      fileFilter: (req, file, cb) => {
+        if (
+          !file.mimetype.includes('image/') &&
+          !file.mimetype.includes('video/')
+        ) {
+          return cb(new Error('Only image and video files are allowed'), false);
+        }
+
+        cb(null, true);
+      },
+    }),
+  )
+  async updateApartmentMedia(
+    @Param('id') id: string,
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: UpdateApartmentMediaDto,
+  ) {
+    return await this.apartmentService.updateApartmentMedia(id, dto, files);
   }
 
   @Patch('toggle-apartment-status/:id')

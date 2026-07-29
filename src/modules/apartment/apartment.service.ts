@@ -7,8 +7,13 @@ import { ClientSession } from 'mongoose';
 import slugify from 'slugify';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudinary.service';
+import { CloudinaryResponse } from '../../common/infrastructure/cloudinary/cloudinary.types';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { CreateApartmentDto } from './dtos/create-apartment.dto';
+import {
+  MediaUpdateAction,
+  UpdateApartmentMediaDto,
+} from './dtos/update-apartment-media.dto';
 import { UpdateApartmentDto } from './dtos/update-apartment.dto';
 import { ApartmentRepository } from './repositories/apartment.repository';
 
@@ -72,6 +77,94 @@ export class ApartmentService {
 
   async findAll(queryWithPaginationDto: QueryWithPaginationDto) {
     const apartment = await this.apartmentRepo.findAll(queryWithPaginationDto);
+    return apartment;
+  }
+
+  async updateApartmentMedia(
+    apartmentId: string,
+    dto: UpdateApartmentMediaDto,
+    files: Express.Multer.File[],
+  ) {
+    const maxMedia = 6;
+
+    const apartment = await this.apartmentRepo.findApartmentById(apartmentId);
+
+    if (!apartment) {
+      throw new NotFoundException({
+        message: 'Apartment not found',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const existingMedia = apartment.media || [];
+
+    const mediaToRemove = existingMedia.filter((media) =>
+      dto.removeMedia?.includes(media.publicUrl),
+    );
+
+    const remainingMedia = existingMedia.filter(
+      (media) => !dto.removeMedia?.includes(media.publicUrl),
+    );
+
+    const incomingFilesCount = files?.length || 0;
+
+    if (dto.action === MediaUpdateAction.APPEND) {
+      if (remainingMedia.length + incomingFilesCount > maxMedia) {
+        throw new BadRequestException({
+          message: `Maximum of ${maxMedia} media files allowed.`,
+          success: false,
+          status: 400,
+        });
+      }
+    }
+
+    if (dto.action === MediaUpdateAction.REPLACE) {
+      if (!incomingFilesCount) {
+        throw new BadRequestException({
+          message: 'Files are required for replace action.',
+          success: false,
+          status: 400,
+        });
+      }
+
+      if (incomingFilesCount > maxMedia) {
+        throw new BadRequestException({
+          message: `Maximum of ${maxMedia} media files allowed.`,
+          success: false,
+          status: 400,
+        });
+      }
+    }
+
+    let uploadedMedia: CloudinaryResponse[] = [];
+
+    if (incomingFilesCount) {
+      uploadedMedia = await this.cloudinaryService.uploadMany(
+        files,
+        'RH-Luxury Homes',
+      );
+    }
+
+    let finalMedia;
+
+    if (dto.action === MediaUpdateAction.REPLACE) {
+      finalMedia = uploadedMedia;
+
+      mediaToRemove.push(...existingMedia);
+    } else {
+      finalMedia = [...remainingMedia, ...uploadedMedia];
+    }
+
+    if (mediaToRemove.length) {
+      const publicIds = mediaToRemove.map((m) => m.publicUrl);
+
+      await this.cloudinaryService.deleteMultiple(publicIds);
+    }
+
+    apartment.media = finalMedia;
+    await apartment.save();
+
     return apartment;
   }
 

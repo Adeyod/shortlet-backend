@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, Model } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
+import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
 import { Booking, BookingDocument } from '../schemas/booking.schema';
 
 @Injectable()
@@ -10,6 +11,133 @@ export class BookingRepository {
     private bookingModel: Model<BookingDocument>,
   ) {}
 
+  async getAllBookings(
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ): Promise<{
+    bookings: BookingDocument[];
+    totalPages: number;
+    totalCount: number;
+  }> {
+    const { page, limit, searchParams } = queryWithPaginationDto;
+
+    let query = this.bookingModel.find();
+
+    if (searchParams) {
+      const regex = new RegExp(searchParams, 'i');
+      query = query.where({
+        $or: [
+          { 'guest.firstName': { $regex: regex } },
+          { 'guest.lastName': { $regex: regex } },
+          { 'guest.email': { $regex: regex } },
+        ],
+      });
+    }
+
+    const count = await query.clone().countDocuments();
+    let pages = 0;
+
+    if (pages !== undefined && limit !== undefined && count !== 0) {
+      const offset = (page - 1) * limit;
+
+      query = query.skip(offset).limit(limit);
+      pages = Math.ceil(count / limit);
+
+      if (page > pages) {
+        throw new NotFoundException({
+          message: 'Page not found.',
+          success: false,
+          status: 404,
+        });
+      }
+    }
+
+    const bookings = await query.sort({ createdAt: -1 });
+
+    if (!bookings) {
+      throw new NotFoundException({
+        message: 'Bookings not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const response = {
+      bookings,
+      totalPages: pages,
+      totalCount: count,
+    };
+
+    return response;
+  }
+
+  async getBookingById(bookingId: string): Promise<BookingDocument | null> {
+    const id = new Types.ObjectId(bookingId);
+    const response = await this.bookingModel.findById(id);
+
+    return response;
+  }
+
+  async getAllMyBookings(
+    userId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ): Promise<{
+    bookings: BookingDocument[];
+    totalCount: number;
+    totalPages: number;
+  }> {
+    const { page, limit, searchParams } = queryWithPaginationDto;
+
+    const id = new Types.ObjectId(userId);
+
+    let query = this.bookingModel.find({ user: id });
+
+    if (searchParams) {
+      const regex = new RegExp(searchParams, 'i');
+      query = query.where({
+        $or: [
+          { firstName: { $regex: regex } },
+          { lastName: { $regex: regex } },
+          { email: { $regex: regex } },
+        ],
+      });
+    }
+
+    const count = await query.clone().countDocuments();
+    let pages = 0;
+
+    if (pages !== undefined && limit !== undefined && count !== 0) {
+      const offset = (page - 1) * limit;
+
+      query = query.skip(offset).limit(limit);
+      pages = Math.ceil(count / limit);
+
+      if (page > pages) {
+        throw new NotFoundException({
+          message: 'Page not found.',
+          success: false,
+          status: 404,
+        });
+      }
+    }
+
+    const bookings = await query.sort({ createdAt: -1 });
+
+    if (!bookings) {
+      throw new NotFoundException({
+        message: 'Bookings not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const response = {
+      bookings,
+      totalPages: pages,
+      totalCount: count,
+    };
+
+    return response;
+  }
   async countOverlappingBookings(
     apartmentId: string,
     checkInDate: Date,
@@ -73,6 +201,12 @@ export class BookingRepository {
       data,
       { returnDocument: 'after' },
     );
+
+    return response;
+  }
+
+  async getBookingsByEmail(email: string): Promise<BookingDocument[]> {
+    const response = await this.bookingModel.find({ 'guest.email': email });
 
     return response;
   }

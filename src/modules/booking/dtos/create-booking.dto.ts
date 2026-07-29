@@ -15,7 +15,7 @@ export class CreateBookingDto {
     example: '2026-07-25',
   })
   @IsDateString()
-  checkInDate!: Date;
+  checkInDate!: string;
 
   @ApiProperty({
     description:
@@ -23,7 +23,7 @@ export class CreateBookingDto {
     example: '2026-07-31',
   })
   @IsDateString()
-  checkOutDate!: Date;
+  checkOutDate!: string;
 
   @ApiProperty({
     description:
