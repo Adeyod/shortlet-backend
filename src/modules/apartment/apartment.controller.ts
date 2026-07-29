@@ -201,6 +201,32 @@ export class ApartmentController {
     return response;
   }
 
+  @Get('get-apartment-by-slug/:slug')
+  @SuccessMessage('Apartment fetched successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Fetch apartment',
+    description: 'This is the endpoint to fetch an apartment by slug.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Apartment fetched successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to fetch apartment.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async findApartmentBySlug(@Param('slug') slug: string) {
+    const response = await this.apartmentService.findApartmentBySlug(slug);
+
+    return response;
+  }
+
   @Patch('update-apartment/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

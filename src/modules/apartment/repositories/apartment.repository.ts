@@ -101,7 +101,7 @@ export class ApartmentRepository {
 
   async findApartmentBySlug(slug: string): Promise<ApartmentDocument | null> {
     const response = await this.apartmentModel.findOne({
-      slug,
+      slug: slug.trim().toLowerCase(),
       isDeleted: false,
     });
 
