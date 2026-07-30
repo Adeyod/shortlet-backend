@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { BookingStatus } from '../enums/booking-status.enum';
 import { GuestInfo } from './guest-info.schema';
 
 export type BookingDocument = HydratedDocument<Booking>;
@@ -25,8 +26,11 @@ export class Booking {
   @Prop({ type: GuestInfo, required: true })
   guest!: GuestInfo;
 
-  @Prop({ default: 'pending' })
-  status!: 'pending' | 'confirmed' | 'cancelled';
+  @Prop({ default: BookingStatus.pending })
+  status!: BookingStatus;
+
+  @Prop()
+  expiresAt!: Date;
 
   @Prop()
   paymentReference?: string;

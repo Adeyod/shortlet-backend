@@ -12,11 +12,11 @@ import { ApartmentModule } from './modules/apartment/apartment.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AvailabilityModule } from './modules/availability/availability.module';
 import { BookingModule } from './modules/booking/booking.module';
+import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
+import { PaymentModule } from './modules/payment/payment.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
-import { PaymentModule } from './modules/payment/payment.module';
-import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
 
 @Module({
   imports: [
@@ -35,6 +35,9 @@ import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         uri: configService.getOrThrow<string>('MONGO_URI'),
+
+        maxPoolSize: 20,
+        minPoolSize: 5,
 
         connectionFactory: (connection) => {
           if (connection.readyState === 1) {

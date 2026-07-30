@@ -9,11 +9,15 @@ import { Connection, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { ApartmentService } from '../apartment/apartment.service';
+import { ApartmentDocument } from '../apartment/schemas/apartment.schema';
+import { AvailabilityService } from '../availability/availability.service';
 import { PaymentProvider } from '../payment/enums/payment-provider.enum';
 import { PaymentService } from '../payment/payment.service';
 import { Role } from '../users/schemas/user.schema';
 import { CreateBookingDto } from './dtos/create-booking.dto';
+import { BookingStatus } from './enums/booking-status.enum';
 import { BookingRepository } from './repositories/booking.repository';
+import { BookingDocument } from './schemas/booking.schema';
 
 @Injectable()
 export class BookingService {
@@ -22,6 +26,7 @@ export class BookingService {
     private readonly bookingRepo: BookingRepository,
 
     private readonly apartmentService: ApartmentService,
+    private readonly availabilityService: AvailabilityService,
     private readonly paymentService: PaymentService,
   ) {}
 
@@ -83,29 +88,52 @@ export class BookingService {
 
     const session = await this.connection.startSession();
 
+    let booking: BookingDocument;
+    let apartmentDoc: ApartmentDocument;
+
     try {
       session.startTransaction();
 
-      const apartmentDoc =
-        await this.apartmentService.findApartmentByIdWithSession(
-          apartment,
-          session,
-        );
+      apartmentDoc = await this.apartmentService.findApartmentByIdWithSession(
+        apartment,
+        session,
+      );
 
       const totalUnits = apartmentDoc.totalUnits;
 
+      const dates = this.availabilityService.getDatesInRange(
+        checkIn.toISOString(),
+        checkOut.toISOString(),
+      );
+
       const overlappingCount =
-        await this.bookingRepo.countOverlappingBookingsWithSession(
+        await this.availabilityService.ensureAvailabilityForRangeWithSession(
           apartment,
-          checkIn,
-          checkOut,
+          checkIn.toISOString(),
+          checkOut.toISOString(),
+          totalUnits,
           session,
         );
       console.log('overlappingCount:', overlappingCount);
 
-      if (overlappingCount >= totalUnits) {
+      // 3. ATOMICALLY reserve units. This handles the check + decrement in one safe step!
+      const unitsRequested = 1; // Change if your DTO supports multiple unit selection per booking
+      const reservationData =
+        await this.availabilityService.reserveUnitsWithSession(
+          new Types.ObjectId(apartment),
+          checkIn.toISOString(),
+          checkOut.toISOString(),
+          unitsRequested,
+          session,
+        );
+
+      // If the number of modified date documents doesn't match total nights, slots ran out!
+      if (
+        reservationData.result.modifiedCount !== reservationData.dates.length
+      ) {
         throw new BadRequestException({
-          message: 'No available units for selected dates',
+          message:
+            'No available units for selected dates. Someone just booked them.',
           success: false,
           status: 400,
         });
@@ -114,6 +142,7 @@ export class BookingService {
       const data = {
         checkInDate: checkIn,
         checkOutDate: checkOut,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         apartment: new Types.ObjectId(dto.apartment),
         guest: {
           firstName: dto.firstName.trim().toLowerCase(),
@@ -124,10 +153,7 @@ export class BookingService {
         user: dto.userId ? new Types.ObjectId(dto.userId) : undefined,
       };
 
-      const booking = await this.bookingRepo.createBookingWithSession(
-        data,
-        session,
-      );
+      booking = await this.bookingRepo.createBookingWithSession(data, session);
 
       if (!booking) {
         throw new BadRequestException({
@@ -137,38 +163,38 @@ export class BookingService {
         });
       }
 
-      const totalAmount = this.calculateTotalAmount(
-        checkIn,
-        checkOut,
-        apartmentDoc.pricePerNight,
-      );
-
-      const input = {
-        bookingId: booking._id,
-        email: dto.email,
-        amount: totalAmount,
-        userId: dto.userId ? new Types.ObjectId(dto.userId) : booking._id,
-      };
-
-      const paymentIntent = await this.paymentService.createPaymentIntent(
-        provider,
-        input,
-      );
-
       await session.commitTransaction();
-
-      const response = {
-        paymentDetail: paymentIntent,
-        bookingDetails: booking,
-      };
-
-      return response;
     } catch (error) {
       await session.abortTransaction();
       throw error;
     } finally {
       session.endSession();
     }
+
+    const totalAmount = this.calculateTotalAmount(
+      checkIn,
+      checkOut,
+      apartmentDoc.pricePerNight,
+    );
+
+    const input = {
+      bookingId: booking._id,
+      email: dto.email,
+      amount: totalAmount,
+      userId: dto.userId ? new Types.ObjectId(dto.userId) : booking._id,
+    };
+
+    const paymentIntent = await this.paymentService.createPaymentIntent(
+      provider,
+      input,
+    );
+
+    const response = {
+      paymentDetail: paymentIntent,
+      bookingDetails: booking,
+    };
+
+    return response;
   }
 
   async getAllMyBookings(
@@ -230,6 +256,56 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  async releaseExpiredHoldsIfAny(
+    apartmentId: string,
+    checkIn: Date,
+    checkOut: Date,
+  ) {
+    const id = new Types.ObjectId(apartmentId);
+
+    const expiredBookings = await this.bookingRepo.getExpiredBookings(
+      id,
+      checkIn,
+      checkOut,
+    );
+
+    if (expiredBookings.length === 0) return;
+
+    // 2. For each expired booking, release its units back and mark it expired
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+
+      for (const booking of expiredBookings) {
+        // Mark booking as expired
+        booking.status = BookingStatus.expired;
+        await booking.save({ session });
+
+        // Get dates for this booking and give units back
+        const dates = this.availabilityService.getDatesInRange(
+          booking.checkInDate.toISOString(),
+          booking.checkOutDate.toISOString(),
+        );
+
+        const units = 1;
+
+        await this.availabilityService.releaseReservedAvailability(
+          booking.apartment,
+          dates,
+          units,
+          session,
+        );
+      }
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Failed to release expired holds:', error);
+    } finally {
+      session.endSession();
+    }
   }
 
   private calculateTotalAmount(

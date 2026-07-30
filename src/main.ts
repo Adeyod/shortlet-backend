@@ -1,11 +1,10 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { NestFactory, Reflector } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-// import 'module-alias/register';
 import { createBullBoard } from '@bull-board/api';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { getQueueToken } from '@nestjs/bull';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Queue } from 'bull';
 import { AppModule } from './app.module';
 import { MongoExceptionFilter } from './common/filters/mongo-exception.filter';
@@ -50,22 +49,6 @@ async function bootstrap() {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS?.split(',') || []).map(
     (origin) => origin.trim(),
   );
-
-  // app.enableCors({
-  //   origin: (
-  //     origin: string | undefined,
-  //     callback: (err: Error | null, allow?: boolean) => void,
-  //   ) => {
-  //     if (!origin) return callback(null, true);
-
-  //     if (allowedOrigins.includes(origin)) {
-  //       return callback(null, true);
-  //     }
-
-  //     return callback(new Error('Not allowed by CORS'), false);
-  //   },
-  //   credentials: true,
-  // });
 
   app.enableCors({
     origin: true,

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
 import { QueryWithPaginationDto } from '../../../common/dto/query-with-pagination';
+import { BookingStatus } from '../enums/booking-status.enum';
 import { Booking, BookingDocument } from '../schemas/booking.schema';
 
 @Injectable()
@@ -66,6 +67,23 @@ export class BookingRepository {
       totalPages: pages,
       totalCount: count,
     };
+
+    return response;
+  }
+
+  async getExpiredBookings(
+    apartmentId: Types.ObjectId,
+    checkIn: Date,
+    checkOut: Date,
+  ) {
+    const response = await this.bookingModel.find({
+      apartment: apartmentId,
+      status: BookingStatus.pending,
+      expiresAt: { $lt: new Date() }, // Expiration time is in the past
+      // Ensure they overlap with the dates being checked (optional optimization)
+      checkInDate: { $lt: checkOut },
+      checkOutDate: { $gt: checkIn },
+    });
 
     return response;
   }
@@ -145,7 +163,7 @@ export class BookingRepository {
   ): Promise<number> {
     const response = await this.bookingModel.countDocuments({
       apartment: apartmentId,
-      status: { $in: ['pending', 'confirmed'] },
+      status: { $in: [BookingStatus.pending, BookingStatus.confirmed] },
       checkInDate: { $lt: checkOutDate },
       checkOutDate: { $gt: checkInDate },
     });
@@ -161,7 +179,11 @@ export class BookingRepository {
     const response = await this.bookingModel
       .countDocuments({
         apartment: apartmentId,
-        status: { $in: ['pending', 'confirmed'] },
+        status: { $in: [BookingStatus.pending, BookingStatus.confirmed] },
+        $or: [
+          { status: BookingStatus.confirmed },
+          { status: BookingStatus.pending, expiresAt: { $gt: new Date() } },
+        ],
         checkInDate: { $lt: checkOutDate },
         checkOutDate: { $gt: checkInDate },
       })
