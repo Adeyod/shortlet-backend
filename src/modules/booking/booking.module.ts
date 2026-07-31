@@ -12,7 +12,7 @@ import { Booking, BookingSchema } from './schemas/booking.schema';
   imports: [
     MongooseModule.forFeature([{ name: Booking.name, schema: BookingSchema }]),
     ApartmentModule,
-    PaymentModule,
+    forwardRef(() => PaymentModule),
     forwardRef(() => AvailabilityModule),
   ],
   controllers: [BookingController],

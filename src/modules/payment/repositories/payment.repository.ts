@@ -52,6 +52,7 @@ export class PaymentRepository {
     authorizationUrl: string,
     providerReference: string,
   ): Promise<PaymentDocument | null> {
+    console.log('providerReference:', providerReference);
     const update = await this.paymentModel.findByIdAndUpdate(
       id,
       {

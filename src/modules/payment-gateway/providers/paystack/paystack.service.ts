@@ -15,12 +15,12 @@ export class PaystackService implements IPaymentProvider {
   }
 
   async initializePayment(payload: PaymentInitializationPayload) {
-    const { amount, userId, email, reference } = payload;
+    const { amount, userId, email, ref } = payload;
 
     const dataToSend = {
       email: email,
       amount,
-      reference,
+      ref,
       metadata: payload,
     };
     const response = await axios.post(
@@ -34,9 +34,12 @@ export class PaystackService implements IPaymentProvider {
       },
     );
 
+    console.log('response:', response);
+
     return {
       provider: 'paystack',
-      reference: payload.reference,
+      reference: payload.ref,
+      // reference: payload.reference,
       providerReference: response.data.data.reference,
       paymentUrl: response.data.data.authorization_url,
     };

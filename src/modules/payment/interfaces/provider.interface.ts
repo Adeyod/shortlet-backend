@@ -3,7 +3,8 @@ import { WebhookProcessionTransactionType } from '../enums/payment-transaction.e
 export interface PaymentInitializationPayload {
   email: string;
   amount: number;
-  reference: string;
+  ref: string;
+  // reference: string;
   userId: string;
   bookingId: string;
   type: WebhookProcessionTransactionType;

@@ -21,12 +21,12 @@ export class FlutterwaveService implements IPaymentProvider {
   async initializePayment(
     payload: PaymentInitializationPayload,
   ): Promise<PaymentProviderResponse> {
-    const { email, amount, reference } = payload;
+    const { email, amount, ref } = payload;
 
     const response = await axios.post(
       `${this.baseUrl}/payments`,
       {
-        tx_ref: reference,
+        tx_ref: ref,
         amount: amount, // Flutterwave expects amount in NGN (not kobo)
         currency: 'NGN',
         redirect_url: 'https://your-frontend.com/payment/callback',
@@ -48,7 +48,7 @@ export class FlutterwaveService implements IPaymentProvider {
 
     return {
       provider: 'flutterwave',
-      reference,
+      reference: ref,
       providerReference: response.data.data.id, // Flutterwave transaction ID
       paymentUrl: response.data.data.link,
     };

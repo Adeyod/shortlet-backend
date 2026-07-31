@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -22,12 +24,14 @@ import { BookingDocument } from './schemas/booking.schema';
 @Injectable()
 export class BookingService {
   constructor(
+    @Inject(forwardRef(() => PaymentService))
+    private readonly paymentService: PaymentService,
+
     @InjectConnection() private readonly connection: Connection,
     private readonly bookingRepo: BookingRepository,
 
     private readonly apartmentService: ApartmentService,
     private readonly availabilityService: AvailabilityService,
-    private readonly paymentService: PaymentService,
   ) {}
 
   async createBooking(dto: CreateBookingDto, provider: PaymentProvider) {
@@ -253,6 +257,19 @@ export class BookingService {
           status: 401,
         });
       }
+    }
+
+    return booking;
+  }
+  async getBookingByIdWithoutUser(bookingId: string) {
+    const booking = await this.bookingRepo.getBookingById(bookingId);
+
+    if (!booking) {
+      throw new NotFoundException({
+        message: 'Booking not found.',
+        success: false,
+        status: 404,
+      });
     }
 
     return booking;
