@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
 import { PaymentGatewayService } from '../payment-gateway/payment-gateway.service';
@@ -55,5 +59,30 @@ export class PaymentService {
       providerResponse.providerReference,
     );
     return providerResponse;
+  }
+
+  async verifyPayment(provider: PaymentProvider, reference: string) {
+    const findPaymentDoc =
+      await this.paymentRepository.getPaymentDocByReference(reference.trim());
+
+    if (!findPaymentDoc) {
+      throw new NotFoundException({
+        message: 'Payment not found.',
+        success: false,
+        status: 404,
+      });
+    }
+    const gatewayResponse = await this.gatewayService.verifyPayment(
+      provider,
+      findPaymentDoc.providerReference,
+    );
+
+    if (!gatewayResponse || gatewayResponse.status !== 'success') {
+      return {
+        message: 'Payment not successful yet.',
+        success: false,
+        status: 400,
+      };
+    }
   }
 }

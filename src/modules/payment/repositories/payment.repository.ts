@@ -13,6 +13,16 @@ export class PaymentRepository {
     private paymentModel: Model<PaymentDocument>,
   ) {}
 
+  async getPaymentDocByReference(
+    reference: string,
+  ): Promise<PaymentDocument | null> {
+    const response = await this.paymentModel.findOne({
+      providerReference: reference,
+    });
+
+    return response;
+  }
+
   async createPaymentIntent(
     provider: PaymentProvider,
     dto: CreatePaymentIntentDto,
