@@ -51,9 +51,23 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // allow requests with no origin (mobile apps, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     credentials: true,
   });
+
+  // app.enableCors({
+  //   origin: true,
+  //   credentials: true,
+  // });
 
   app.useGlobalInterceptors(new GlobalResponseInterceptor(app.get(Reflector)));
   app.useGlobalFilters(new MongoExceptionFilter());
