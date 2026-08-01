@@ -59,7 +59,8 @@ export class PaymentGatewayService {
       webhookData.status === 'success' ||
       webhookData.event === 'charge.success'
     ) {
-      const reference = webhookData.reference;
+      const reference = webhookData.data.reference;
+      console.log(`${provider} reference:`, reference);
 
       // 3. Call your PaymentService to update booking & payment records idempotently
       const res = await this.paymentService.fulfillSuccessfulPayment(

@@ -80,7 +80,7 @@ export class PaymentService {
 
   async fulfillSuccessfulPayment(provider: PaymentProvider, reference: string) {
     const findPaymentDoc =
-      await this.paymentRepository.getPaymentDocByReference(reference.trim());
+      await this.paymentRepository.getPaymentDocByReference(reference);
 
     if (!findPaymentDoc) {
       throw new NotFoundException({
