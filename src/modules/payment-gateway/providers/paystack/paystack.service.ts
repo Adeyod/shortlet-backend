@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import * as crypto from 'crypto';
 import {
   IPaymentProvider,
   PaymentInitializationPayload,
@@ -9,9 +10,12 @@ import {
 @Injectable()
 export class PaystackService implements IPaymentProvider {
   private readonly baseUrl = 'https://api.paystack.co';
-  private readonly secret = process.env.PAYSTACK_TEST_SECRET_KEY;
+  private readonly secret: string;
+  // private readonly secret = process.env.PAYSTACK_TEST_SECRET_KEY
   constructor(private configService: ConfigService) {
-    this.secret = this.configService.get<string>('PAYSTACK_TEST_SECRET_KEY');
+    // this.secret = this.configService.get<string>('PAYSTACK_TEST_SECRET_KEY');
+    this.secret =
+      this.configService.get<string>('PAYSTACK_TEST_SECRET_KEY') || '';
   }
 
   async initializePayment(payload: PaymentInitializationPayload) {
@@ -50,7 +54,7 @@ export class PaystackService implements IPaymentProvider {
       `${this.baseUrl}/transaction/verify/${reference}`,
       {
         headers: {
-          Authorization: `Bearer ${this.secret as string}`,
+          Authorization: `Bearer ${this.secret}`,
         },
       },
     );
@@ -58,21 +62,21 @@ export class PaystackService implements IPaymentProvider {
     return response.data.data;
   }
 
-  // handleWebhook(req: Request): Promise<any> {
-  //   const hash = crypto
-  //     .createHmac('sha512', this.secret as string)
-  //     .update(JSON.stringify(req.body))
-  //     .digest('hex');
+  handleWebhook(req: Request): any {
+    const hash = crypto
+      .createHmac('sha512', this.secret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
 
-  //   if (hash !== req.headers['x-paystack-signature']) {
-  //     throw new UnauthorizedException({
-  //       message: 'Invalid signature.',
-  //       success: false,
-  //       status: 401,
-  //     });
-  //   }
+    if (hash !== req.headers['x-paystack-signature']) {
+      throw new UnauthorizedException({
+        message: 'Invalid signature.',
+        success: false,
+        status: 401,
+      });
+    }
 
-  //   const event = req.body;
-  //   return event;
-  // }
+    const event = req.body;
+    return event;
+  }
 }

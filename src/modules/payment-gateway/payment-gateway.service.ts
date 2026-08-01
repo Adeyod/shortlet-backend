@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { PaymentProvider } from '../payment/enums/payment-provider.enum';
 import { PaymentInitializationPayload } from '../payment/interfaces/provider.interface';
+import { PaymentService } from '../payment/payment.service';
 import { FlutterwaveService } from './providers/flutterwave/flutterwave.service';
 import { PaystackService } from './providers/paystack/paystack.service';
 
@@ -8,6 +10,8 @@ export class PaymentGatewayService {
   private providers: Record<string, any>;
 
   constructor(
+    @Inject(forwardRef(() => PaymentService))
+    private readonly paymentService: PaymentService,
     private readonly paystackService: PaystackService,
     private readonly flutterwaveService: FlutterwaveService,
   ) {
@@ -38,6 +42,34 @@ export class PaymentGatewayService {
     }
 
     return service;
+  }
+
+  async handleWebhook(provider: PaymentProvider, req: any) {
+    const service = this.getProvider(provider);
+
+    if (!service.handleWebhook) {
+      throw new Error(`${provider} does not support webhook`);
+    }
+
+    const webhookData = await service.handleWebhook(req);
+
+    console.log(`${provider} webhookData:`, webhookData);
+
+    if (
+      webhookData.status === 'success' ||
+      webhookData.event === 'charge.success'
+    ) {
+      const reference = webhookData.reference;
+
+      // 3. Call your PaymentService to update booking & payment records idempotently
+      const res = await this.paymentService.fulfillSuccessfulPayment(
+        provider,
+        reference,
+      );
+      console.log(`${provider} fulfillSuccessfulPayment:`, res);
+    }
+
+    return { received: true };
   }
 
   async initializePayment(

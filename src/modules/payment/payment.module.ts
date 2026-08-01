@@ -10,7 +10,8 @@ import { Payment, PaymentSchema } from './schemas/payment.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
-    PaymentGatewayModule,
+
+    forwardRef(() => PaymentGatewayModule),
     forwardRef(() => BookingModule),
   ],
   controllers: [PaymentController],

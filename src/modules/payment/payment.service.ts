@@ -20,10 +20,11 @@ export class PaymentService {
   constructor(
     @Inject(forwardRef(() => BookingService))
     private readonly bookingService: BookingService,
+    @Inject(forwardRef(() => PaymentGatewayService))
+    private readonly gatewayService: PaymentGatewayService,
 
     @InjectConnection() private readonly connection: Connection,
     private readonly paymentRepository: PaymentRepository,
-    private readonly gatewayService: PaymentGatewayService,
   ) {}
   async createPaymentIntent(
     provider: PaymentProvider,

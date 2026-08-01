@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import {
@@ -11,11 +11,14 @@ import {
 export class FlutterwaveService implements IPaymentProvider {
   private readonly baseUrl = 'https://api.flutterwave.com/v3';
   private readonly secretKey = process.env.FLUTTERWAVE_TEST_SECRET_KEY;
+  private readonly webhookSecretHash: string;
 
   constructor(private readonly configService: ConfigService) {
     this.secretKey = this.configService.get<string>(
       'FLUTTERWAVE_TEST_SECRET_KEY',
     );
+    this.webhookSecretHash =
+      this.configService.get<string>('FLUTTERWAVE_WEBHOOK_SECRET_HASH') || '';
   }
 
   async initializePayment(
@@ -68,5 +71,24 @@ export class FlutterwaveService implements IPaymentProvider {
     );
 
     return response.data.data;
+  }
+
+  handleWebhook(req: any): any {
+    // Flutterwave passes the secret hash inside the 'verif-hash' header
+    const signature = req.headers['verif-hash'];
+
+    if (!signature || signature !== this.webhookSecretHash) {
+      throw new UnauthorizedException({
+        message: 'Invalid Flutterwave webhook signature.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    const event = req.body;
+
+    // Flutterwave event payload structure typically includes 'event' and 'data'
+    // e.g., event: 'charge.completed', data: { status: 'successful', tx_ref: '...', ... }
+    return event;
   }
 }
