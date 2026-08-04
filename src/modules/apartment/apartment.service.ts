@@ -258,6 +258,7 @@ export class ApartmentService {
         status: 404,
       });
     }
+
     return apartment;
   }
 

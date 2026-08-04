@@ -325,6 +325,17 @@ export class BookingService {
     }
   }
 
+  async attachUserToGuestBookings(userId: string, email: string) {
+    const response = await this.bookingRepo.attachUserToGuestBookings(
+      userId,
+      email,
+    );
+
+    console.log('booking service attachUserToGuestBookings:', response);
+
+    return response;
+  }
+
   private calculateTotalAmount(
     checkInDate: Date,
     checkOutDate: Date,

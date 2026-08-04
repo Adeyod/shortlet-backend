@@ -95,6 +95,24 @@ export class BookingRepository {
     return response;
   }
 
+  async attachUserToGuestBookings(userId: string, email: string) {
+    const id = new Types.ObjectId(userId);
+
+    const response = await this.bookingModel.updateMany(
+      {
+        email,
+        user: { $exists: false },
+      },
+      {
+        $set: { user: id },
+      },
+    );
+
+    console.log('booking repo attachUserToGuestBookings:', response);
+
+    return response;
+  }
+
   async getAllMyBookings(
     userId: string,
     queryWithPaginationDto: QueryWithPaginationDto,

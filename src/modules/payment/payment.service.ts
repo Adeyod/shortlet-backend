@@ -10,6 +10,7 @@ import { Connection, Types } from 'mongoose';
 import { BookingService } from '../booking/booking.service';
 import { BookingStatus } from '../booking/enums/booking-status.enum';
 import { PaymentGatewayService } from '../payment-gateway/payment-gateway.service';
+import { UsersService } from '../users/users.service';
 import { PaymentProvider } from './enums/payment-provider.enum';
 import { PaymentStatus } from './enums/payment-status.enum';
 import { WebhookProcessionTransactionType } from './enums/payment-transaction.enum';
@@ -22,6 +23,8 @@ export class PaymentService {
     private readonly bookingService: BookingService,
     @Inject(forwardRef(() => PaymentGatewayService))
     private readonly gatewayService: PaymentGatewayService,
+
+    private readonly userService: UsersService,
 
     @InjectConnection() private readonly connection: Connection,
     private readonly paymentRepository: PaymentRepository,
@@ -118,12 +121,18 @@ export class PaymentService {
       });
     }
 
+    const user = await this.userService.findByEmail(booking.guest.email);
+
     // Idempotency check: If already confirmed, just return success safely
     if (
       booking.status === BookingStatus.confirmed &&
       findPaymentDoc.status === PaymentStatus.success
     ) {
-      return { success: true, message: 'Payment already processed' };
+      return {
+        success: true,
+        message: 'Payment already processed',
+        isRegistered: !!user,
+      };
     }
 
     // 3. Update booking status to CONFIRMED
@@ -133,9 +142,6 @@ export class PaymentService {
     await booking.save();
     await findPaymentDoc.save();
 
-    // Note: Since units were already soft-held during `createBooking`,
-    // you don't need to decrement availability again! The units are already secured.
-
-    return { success: true, booking };
+    return { success: true, booking, isRegistered: !!user };
   }
 }

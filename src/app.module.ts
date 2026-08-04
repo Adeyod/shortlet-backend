@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { MongooseModule } from '@nestjs/mongoose';
 import Joi from 'joi';
 import { AppController } from './app.controller';
@@ -17,6 +18,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { RefreshTokensModule } from './modules/refresh-tokens/refresh-tokens.module';
 import { TokensModule } from './modules/tokens/tokens.module';
 import { UsersModule } from './modules/users/users.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -90,6 +92,7 @@ import { UsersModule } from './modules/users/users.module';
 
     AuthModule,
     MailModule,
+    EventEmitterModule.forRoot(),
     UsersModule,
     RefreshTokensModule,
     TokensModule,
@@ -99,6 +102,7 @@ import { UsersModule } from './modules/users/users.module';
     BookingModule,
     PaymentModule,
     PaymentGatewayModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

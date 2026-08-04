@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BookingModule } from '../booking/booking.module';
 import { PaymentGatewayModule } from '../payment-gateway/payment-gateway.module';
+import { UsersModule } from '../users/users.module';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { PaymentRepository } from './repositories/payment.repository';
@@ -13,6 +14,7 @@ import { Payment, PaymentSchema } from './schemas/payment.schema';
 
     forwardRef(() => PaymentGatewayModule),
     forwardRef(() => BookingModule),
+    UsersModule,
   ],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentRepository],

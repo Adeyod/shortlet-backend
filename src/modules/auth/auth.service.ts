@@ -5,11 +5,13 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { Model, Types } from 'mongoose';
+import { RegistrationEvents } from '../../common/events/registration.events';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { generateCode } from '../../common/utils/code';
 import {
@@ -38,6 +40,7 @@ export class AuthService {
     // private usersRepository: UsersRepository,
     // private tokensRepository: TokensRepository,
 
+    private readonly eventEmitter: EventEmitter2,
     private usersService: UsersService,
     private tokensService: TokensService,
     private jwtService: JwtService,
@@ -107,6 +110,19 @@ export class AuthService {
     const verify = await this.usersService.verifyUser(userExist._id);
 
     await this.tokensService.deleteToken(tokenExist._id);
+
+    const userId = userExist._id;
+    const userEmail = userExist.email;
+
+    const eventEmitted = this.eventEmitter.emit(
+      RegistrationEvents.email_verified,
+      {
+        userId,
+        userEmail,
+      },
+    );
+
+    console.log('eventEmitted:', eventEmitted);
 
     return {
       message: 'Email verification successful',
