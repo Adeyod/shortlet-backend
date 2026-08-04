@@ -4,12 +4,16 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
+import { QueryWithPaginationDto } from '../../common/dto/query-with-pagination';
+import { JwtUser } from '../../common/types/jwt-user.type';
 import { BookingService } from '../booking/booking.service';
 import { BookingStatus } from '../booking/enums/booking-status.enum';
 import { PaymentGatewayService } from '../payment-gateway/payment-gateway.service';
+import { Role } from '../users/schemas/user.schema';
 import { UsersService } from '../users/users.service';
 import { PaymentProvider } from './enums/payment-provider.enum';
 import { PaymentStatus } from './enums/payment-status.enum';
@@ -143,5 +147,75 @@ export class PaymentService {
     await findPaymentDoc.save();
 
     return { success: true, booking, isRegistered: !!user };
+  }
+
+  async getAllPayments(queryWithPaginationDto: QueryWithPaginationDto) {
+    const payments = await this.paymentRepository.getAllPayments(
+      queryWithPaginationDto,
+    );
+
+    return payments;
+  }
+
+  async getAllMyPayments(
+    user: JwtUser,
+    userId: string,
+    queryWithPaginationDto: QueryWithPaginationDto,
+  ) {
+    if (user.sub.toString() !== userId) {
+      throw new UnauthorizedException({
+        message: 'You can only view your payments.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    const bookings = await this.paymentRepository.getAllMyPayments(
+      user.sub.toString(),
+      queryWithPaginationDto,
+    );
+
+    return bookings;
+  }
+
+  async getPaymentById(paymentId: string, user: JwtUser) {
+    const response = await this.paymentRepository.getPaymentById(paymentId);
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Payment not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (user.role !== Role.ADMIN) {
+      if (!response.user) {
+        throw new UnauthorizedException({
+          message: 'You can only view your own payments.',
+          success: false,
+          status: 401,
+        });
+      }
+
+      if (response.user?.toString() !== user.sub.toString()) {
+        throw new UnauthorizedException({
+          message: 'You can only view your own payments.',
+          success: false,
+          status: 401,
+        });
+      }
+    }
+
+    return response;
+  }
+
+  async attachUserToPayments(userId: string, bookingIds: Types.ObjectId[]) {
+    const response = await this.paymentRepository.attachUserToPayments(
+      userId,
+      bookingIds,
+    );
+
+    return response;
   }
 }

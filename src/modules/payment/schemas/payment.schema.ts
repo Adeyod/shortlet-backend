@@ -32,7 +32,7 @@ export class Payment {
   status!: PaymentStatus;
 
   @Prop({ type: Types.ObjectId, ref: 'Booking' })
-  booking!: string;
+  booking!: Types.ObjectId;
 
   @Prop({
     type: String,

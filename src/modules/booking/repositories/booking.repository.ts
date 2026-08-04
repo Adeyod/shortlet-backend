@@ -98,17 +98,26 @@ export class BookingRepository {
   async attachUserToGuestBookings(userId: string, email: string) {
     const id = new Types.ObjectId(userId);
 
+    const updatedBookings = await this.bookingModel.find({
+      'guest.email': email,
+      $or: [{ user: { $exists: false } }, { user: null }],
+    });
+
+    const bookingIds = updatedBookings.map((b) => b._id);
+
     const response = await this.bookingModel.updateMany(
       {
-        'guest.email': email,
-        $or: [{ user: { $exists: false } }, { user: null }],
+        _id: { $in: bookingIds },
       },
       {
         $set: { user: id },
       },
     );
 
-    return response;
+    return {
+      response,
+      bookingIds,
+    };
   }
 
   async getAllMyBookings(
@@ -129,9 +138,9 @@ export class BookingRepository {
       const regex = new RegExp(searchParams, 'i');
       query = query.where({
         $or: [
-          { firstName: { $regex: regex } },
-          { lastName: { $regex: regex } },
-          { email: { $regex: regex } },
+          { 'guest.firstName': { $regex: regex } },
+          { 'guest.lastName': { $regex: regex } },
+          { 'guest.email': { $regex: regex } },
         ],
       });
     }

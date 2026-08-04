@@ -326,10 +326,12 @@ export class BookingService {
   }
 
   async attachUserToGuestBookings(userId: string, email: string) {
-    const response = await this.bookingRepo.attachUserToGuestBookings(
-      userId,
-      email,
-    );
+    const { bookingIds, response } =
+      await this.bookingRepo.attachUserToGuestBookings(userId, email);
+
+    if (bookingIds && bookingIds.length > 0) {
+      await this.paymentService.attachUserToPayments(userId, bookingIds);
+    }
 
     return response;
   }
