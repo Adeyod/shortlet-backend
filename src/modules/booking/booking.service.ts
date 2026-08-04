@@ -331,8 +331,6 @@ export class BookingService {
       email,
     );
 
-    console.log('booking service attachUserToGuestBookings:', response);
-
     return response;
   }
 

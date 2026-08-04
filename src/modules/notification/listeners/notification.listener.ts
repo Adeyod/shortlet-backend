@@ -10,17 +10,19 @@ export class NotificationListener {
   @OnEvent(RegistrationEvents.email_verified)
   async handleBookingUserIdReconciliation(payload: {
     userId: string;
-    email: string;
+    userEmail: string;
   }) {
-    const { userId, email } = payload;
+    const { userId, userEmail } = payload;
 
-    if (!userId || !email) return;
+    if (!userId || !userEmail) {
+      return;
+    }
+
+    const email = userEmail;
 
     const response = await this.bookingService.attachUserToGuestBookings(
       userId,
       email,
     );
-
-    console.log('response:', response);
   }
 }

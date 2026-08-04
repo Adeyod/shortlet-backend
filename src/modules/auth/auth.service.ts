@@ -114,15 +114,10 @@ export class AuthService {
     const userId = userExist._id;
     const userEmail = userExist.email;
 
-    const eventEmitted = this.eventEmitter.emit(
-      RegistrationEvents.email_verified,
-      {
-        userId,
-        userEmail,
-      },
-    );
-
-    console.log('eventEmitted:', eventEmitted);
+    this.eventEmitter.emit(RegistrationEvents.email_verified, {
+      userId,
+      userEmail,
+    });
 
     return {
       message: 'Email verification successful',

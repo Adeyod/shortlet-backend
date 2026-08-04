@@ -100,15 +100,13 @@ export class BookingRepository {
 
     const response = await this.bookingModel.updateMany(
       {
-        email,
-        user: { $exists: false },
+        'guest.email': email,
+        $or: [{ user: { $exists: false } }, { user: null }],
       },
       {
         $set: { user: id },
       },
     );
-
-    console.log('booking repo attachUserToGuestBookings:', response);
 
     return response;
   }
