@@ -52,7 +52,10 @@ export class BookingRepository {
       }
     }
 
-    const bookings = await query.sort({ createdAt: -1 });
+    const bookings = await query.sort({ createdAt: -1 }).populate({
+      path: 'apartment',
+      select: 'name media price',
+    });
 
     if (!bookings) {
       throw new NotFoundException({
@@ -90,7 +93,10 @@ export class BookingRepository {
 
   async getBookingById(bookingId: string): Promise<BookingDocument | null> {
     const id = new Types.ObjectId(bookingId);
-    const response = await this.bookingModel.findById(id);
+    const response = await this.bookingModel.findById(id).populate({
+      path: 'apartment',
+      select: 'name media price',
+    });
 
     return response;
   }
@@ -163,7 +169,10 @@ export class BookingRepository {
       }
     }
 
-    const bookings = await query.sort({ createdAt: -1 });
+    const bookings = await query.sort({ createdAt: -1 }).populate({
+      path: 'apartment',
+      select: 'name media price',
+    });
 
     if (!bookings) {
       throw new NotFoundException({
@@ -225,6 +234,25 @@ export class BookingRepository {
     });
 
     return response;
+  }
+
+  async backfillIsDeletedField(): Promise<{
+    matchedCount: number;
+    modifiedCount: number;
+  }> {
+    const result = await this.bookingModel.updateMany(
+      {
+        isDeleted: { $exists: false }, // find docs without the field
+      },
+      {
+        $set: { isDeleted: false }, // add field with default value
+      },
+    );
+
+    return {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    };
   }
 
   async createBooking(data: Partial<Booking>): Promise<BookingDocument> {
