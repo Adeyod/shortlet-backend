@@ -159,7 +159,7 @@ export class PaymentController {
     description: 'Internal server error.',
   })
   async getPaymentById(
-    @Param('bookingId') paymentId: string,
+    @Param('paymentId') paymentId: string,
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.paymentService.getPaymentById(paymentId, user);
