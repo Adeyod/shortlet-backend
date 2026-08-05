@@ -29,6 +29,11 @@ export class Booking {
   @Prop({ default: BookingStatus.pending })
   status!: BookingStatus;
 
+  @Prop({
+    default: false,
+  })
+  isDeleted!: boolean;
+
   @Prop()
   expiresAt!: Date;
 

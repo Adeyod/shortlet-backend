@@ -158,7 +158,7 @@ export class PaymentRepository {
 
     const id = new Types.ObjectId(userId);
 
-    let query = this.paymentModel.find({ user: id });
+    let query = this.paymentModel.find({ user: id, isDeleted: false });
 
     if (searchParams) {
       const regex = new RegExp(searchParams, 'i');

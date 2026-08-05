@@ -4,6 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -163,6 +164,45 @@ export class PaymentController {
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.paymentService.getPaymentById(paymentId, user);
+
+    return response;
+  }
+  @Put('delete-payment-by-id/:paymentId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Payment deleted successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'This is the endpoint for deleting Payment by ID.',
+    description:
+      'This endpoint is for deleting Payment details from the database. It can be used by the user that own the Payment.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Payment deleted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request. Unable to deleted Payment.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Payment not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async deletePaymentById(
+    @Param('paymentId') paymentId: string,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    const response = await this.paymentService.deletePaymentById(
+      paymentId,
+      user,
+    );
 
     return response;
   }

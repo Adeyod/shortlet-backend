@@ -46,6 +46,11 @@ export class Payment {
   })
   verified!: boolean;
 
+  @Prop({
+    default: false,
+  })
+  isDeleted!: boolean;
+
   @Prop({ type: Object })
   metadata!: Record<string, any>; // flexible (store raw response if needed)
 

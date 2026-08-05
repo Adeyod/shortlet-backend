@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -166,6 +167,45 @@ export class BookingController {
     @GetCurrentUser() user: JwtUser,
   ) {
     const response = await this.bookingService.getBookingById(bookingId, user);
+
+    return response;
+  }
+  @Put('delete-booking-by-id/:bookingId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Booking deleted successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'This is the endpoint for deleting booking by ID.',
+    description:
+      'This endpoint is for deleting booking details from the database. It can be used by the user that own the booking.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Booking deleted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request. Unable to deleted booking.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Booking not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
+  })
+  async deleteBookingById(
+    @Param('bookingId') bookingId: string,
+    @GetCurrentUser() user: JwtUser,
+  ) {
+    const response = await this.bookingService.deleteBookingById(
+      bookingId,
+      user,
+    );
 
     return response;
   }

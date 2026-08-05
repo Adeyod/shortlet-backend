@@ -190,6 +190,14 @@ export class PaymentService {
     }
 
     if (user.role !== Role.ADMIN) {
+      if (response.isDeleted === true) {
+        throw new NotFoundException({
+          message: 'Payment not found.',
+          success: false,
+          status: 404,
+        });
+      }
+
       if (!response.user) {
         throw new UnauthorizedException({
           message: 'You can only view your own payments.',
@@ -206,6 +214,38 @@ export class PaymentService {
         });
       }
     }
+
+    return response;
+  }
+  async deletePaymentById(paymentId: string, user: JwtUser) {
+    const response = await this.paymentRepository.getPaymentById(paymentId);
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Payment not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (!response.user) {
+      throw new UnauthorizedException({
+        message: 'You can only delete your own payments.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    if (response.user?.toString() !== user.sub.toString()) {
+      throw new UnauthorizedException({
+        message: 'You can only delete your own payments.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    response.isDeleted = true;
+    await response.save();
 
     return response;
   }

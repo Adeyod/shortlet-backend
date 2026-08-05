@@ -247,6 +247,13 @@ export class BookingService {
     }
 
     if (user.role !== Role.ADMIN) {
+      if (booking.isDeleted === true) {
+        throw new NotFoundException({
+          message: 'Booking not found.',
+          success: false,
+          status: 404,
+        });
+      }
       if (
         (booking.user && user.sub.toString() !== booking.user?.toString()) ||
         booking.guest.email !== user.email
@@ -260,6 +267,39 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  async deleteBookingById(bookingId: string, user: JwtUser) {
+    const response = await this.bookingRepo.getBookingById(bookingId);
+
+    if (!response) {
+      throw new NotFoundException({
+        message: 'Booking not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (!response.user) {
+      throw new UnauthorizedException({
+        message: 'You can only delete your own booking.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    if (response.user?.toString() !== user.sub.toString()) {
+      throw new UnauthorizedException({
+        message: 'You can only delete your own booking.',
+        success: false,
+        status: 401,
+      });
+    }
+
+    response.isDeleted = true;
+    await response.save();
+
+    return response;
   }
   async getBookingByIdWithoutUser(bookingId: string) {
     const booking = await this.bookingRepo.getBookingById(bookingId);
