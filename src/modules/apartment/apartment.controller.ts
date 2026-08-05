@@ -269,6 +269,31 @@ export class ApartmentController {
     summary: 'Update apartment media',
     description: 'This is the endpoint to update an apartment media.',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+        removeMedia: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+        action: {
+          type: 'string',
+          enum: ['append', 'replace'],
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'Apartment media updated successfully.',

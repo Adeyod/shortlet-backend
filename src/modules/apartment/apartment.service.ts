@@ -103,9 +103,12 @@ export class ApartmentService {
       dto.removeMedia?.includes(media.publicUrl),
     );
 
+    console.log('mediaToRemove:', mediaToRemove);
+
     const remainingMedia = existingMedia.filter(
       (media) => !dto.removeMedia?.includes(media.publicUrl),
     );
+    console.log('remainingMedia:', remainingMedia);
 
     const incomingFilesCount = files?.length || 0;
 
@@ -149,17 +152,17 @@ export class ApartmentService {
     let finalMedia;
 
     if (dto.action === MediaUpdateAction.REPLACE) {
-      finalMedia = uploadedMedia;
-
-      mediaToRemove.push(...existingMedia);
-    } else {
       finalMedia = [...remainingMedia, ...uploadedMedia];
+    } else {
+      finalMedia = [...existingMedia, ...uploadedMedia];
     }
 
     if (mediaToRemove.length) {
       const publicIds = mediaToRemove.map((m) => m.publicUrl);
 
-      await this.cloudinaryService.deleteMultiple(publicIds);
+      console.log('publicIds:', publicIds);
+      const deleted = await this.cloudinaryService.deleteMultiple(publicIds);
+      console.log('deleted:', deleted);
     }
 
     apartment.media = finalMedia;
