@@ -10,6 +10,7 @@ import { CloudinaryService } from '../../common/infrastructure/cloudinary/cloudi
 import { CloudinaryResponse } from '../../common/infrastructure/cloudinary/cloudinary.types';
 import { JwtUser } from '../../common/types/jwt-user.type';
 import { CreateApartmentDto } from './dtos/create-apartment.dto';
+import { DeleteApartmentMediaDto } from './dtos/delete-apartment-media.dto';
 import {
   MediaUpdateAction,
   UpdateApartmentMediaDto,
@@ -233,7 +234,11 @@ export class ApartmentService {
     return updated;
   }
 
-  async deleteApartmentMedias(apartmentId: string, mediaPublicUrls: string[]) {
+  async deleteApartmentMedias(
+    apartmentId: string,
+    body: DeleteApartmentMediaDto,
+  ) {
+    const { mediaPublicUrls } = body;
     const apartment = await this.apartmentRepo.findApartmentById(apartmentId);
 
     if (!apartment) {

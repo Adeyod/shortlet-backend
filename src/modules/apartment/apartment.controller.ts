@@ -32,6 +32,7 @@ import type { JwtUser } from '../../common/types/jwt-user.type';
 import { Role } from '../users/schemas/user.schema';
 import { ApartmentService } from './apartment.service';
 import { CreateApartmentDto } from './dtos/create-apartment.dto';
+import { DeleteApartmentMediaDto } from './dtos/delete-apartment-media.dto';
 import { UpdateApartmentMediaDto } from './dtos/update-apartment-media.dto';
 import { UpdateApartmentDto } from './dtos/update-apartment.dto';
 
@@ -418,11 +419,11 @@ export class ApartmentController {
   })
   async deleteApartmentMedias(
     @Param('apartmentId') apartmentId: string,
-    mediaPublicUrls: string[],
+    @Body() body: DeleteApartmentMediaDto,
   ) {
     const response = await this.apartmentService.deleteApartmentMedias(
       apartmentId,
-      mediaPublicUrls,
+      body,
     );
 
     return response;
