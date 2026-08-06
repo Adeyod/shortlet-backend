@@ -391,4 +391,40 @@ export class ApartmentController {
 
     return response;
   }
+
+  @Delete('delete-apartment-media/:apartmentId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('Apartment media deleted successfully.')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete apartment media(s)',
+    description:
+      'This is the endpoint to delete one or more media in an apartment.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Apartment media deleted successfully.',
+    type: ApiResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unable to delete apartment media.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  async deleteApartmentMedias(
+    @Param('apartmentId') apartmentId: string,
+    mediaPublicUrls: string[],
+  ) {
+    const response = await this.apartmentService.deleteApartmentMedias(
+      apartmentId,
+      mediaPublicUrls,
+    );
+
+    return response;
+  }
 }

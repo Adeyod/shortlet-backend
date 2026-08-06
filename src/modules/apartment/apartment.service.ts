@@ -233,6 +233,52 @@ export class ApartmentService {
     return updated;
   }
 
+  async deleteApartmentMedias(apartmentId: string, mediaPublicUrls: string[]) {
+    const apartment = await this.apartmentRepo.findApartmentById(apartmentId);
+
+    if (!apartment) {
+      throw new NotFoundException({
+        message: 'Apartment not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    const existingMedia = apartment.media || [];
+
+    const mediaToRemove = existingMedia.filter((media) =>
+      mediaPublicUrls?.includes(media.publicUrl),
+    );
+
+    console.log('mediaToRemove:', mediaToRemove);
+
+    const remainingMedia = existingMedia.filter(
+      (media) => !mediaPublicUrls?.includes(media.publicUrl),
+    );
+    console.log('remainingMedia:', remainingMedia);
+
+    if (!mediaToRemove.length) {
+      throw new NotFoundException({
+        message: 'Media not found.',
+        success: false,
+        status: 404,
+      });
+    }
+
+    if (mediaToRemove.length) {
+      const publicIds = mediaToRemove.map((m) => m.publicUrl);
+
+      console.log('publicIds:', publicIds);
+      const deleted = await this.cloudinaryService.deleteMultiple(publicIds);
+      console.log('deleted:', deleted);
+    }
+
+    apartment.media = remainingMedia;
+
+    await apartment.save();
+
+    return { message: 'Apartment deleted successfully' };
+  }
   async deleteApartment(id: string) {
     const apartment = await this.apartmentRepo.findApartmentById(id);
 
